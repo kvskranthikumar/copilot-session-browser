@@ -1,194 +1,135 @@
 # Copilot Session Browser
 
-A VS Code extension to browse, search, summarise, and export GitHub Copilot Chat sessions — locally, privately, and without any network calls.
+> Browse, search, summarise, and export your GitHub Copilot Chat sessions — entirely locally, with no network calls and no telemetry.
 
 ---
 
 ## Features
 
-| Feature               | Details                                                                             |
-| --------------------- | ----------------------------------------------------------------------------------- |
-| **Session list**      | Sidebar with search, date filter, and sort                                          |
-| **Transcript viewer** | Full turn-by-turn conversation with syntax-highlighted code blocks and copy buttons |
-| **JIRA summary**      | One-click Atlassian Markdown summary panel with inline preview of generated content |
-| **Export**            | JIRA Markdown, Standard Markdown, or re-importable JSON — opens a **preview panel** with copy-to-clipboard and save buttons before writing to disk |
-| **Import**            | Load previously exported JSON session files                                         |
-| **SQLite support**    | Reads `.vscdb` / `.db` files directly — no manual export required                   |
-| **Diagnostics**       | See exactly where the extension searched, what it found, and which DB tables exist  |
-| **Path override**     | Point the extension at any `workspaceStorage`, `globalStorage`, or User directory   |
-| **Secret redaction**  | Tokens, API keys, passwords, private keys removed before export                     |
-| **Local-first**       | No network calls; no telemetry by default                                           |
+| Feature                   | Description                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| **Session Browser**       | Sidebar panel with full-text search, date filtering, and sorting                         |
+| **Transcript Viewer**     | Turn-by-turn conversation view with syntax-highlighted code blocks and one-click copy    |
+| **Summary**               | Generate Markdown summary with a live inline preview                                     |
+| **Export**                | Export sessions as JIRA Markdown, Standard Markdown, or JSON — preview before saving     |
+| **Import**                | Re-load a previously exported JSON session file                                          |
+| **SQLite Support**        | Reads `.vscdb` and `.db` files directly — no manual data export required                 |
+| **Diagnostics**           | Inspect discovered storage paths, file types, database tables, and session counts        |
+| **Storage Path Override** | Point the extension at any custom `workspaceStorage`, `globalStorage`, or User directory |
+| **Secret Redaction**      | Automatically strips tokens, API keys, passwords, and private keys before any export     |
+| **Local-First & Private** | Zero network calls; telemetry is off by default                                          |
 
 ---
 
-## Running the Extension Locally
+## Getting Started
 
-### Prerequisites
+After installing the extension from the VS Code Marketplace:
 
-- Node.js ≥ 18
-- VS Code ≥ 1.85
+1. Click the **Copilot Session Browser** icon in the Activity Bar (left sidebar).
+2. The extension automatically discovers your Copilot Chat sessions.
+3. Click any session to open the transcript viewer.
 
-### Steps
-
-```bash
-# 1 – Install dependencies
-npm install
-
-# 2 – Compile TypeScript
-npm run compile
-
-# 3 – Open in VS Code
-code .
-```
-
-Press **F5** to launch the Extension Development Host.
-The "Copilot Sessions" icon appears in the Activity Bar.
+> If no sessions appear, see [Troubleshooting: Sessions Not Found](#troubleshooting-sessions-not-found) below.
 
 ---
 
 ## Commands
 
-| Command                                                     | Description                                                                                  |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `Copilot: Refresh Session Index`                            | Re-scan local storage for sessions                                                           |
-| `Copilot: View Session`                                     | Open transcript in editor tab                                                                |
-| `Copilot: Summarize Session`                                | Generate an Atlassian Markdown summary and view it in a panel                                |
-| `Copilot: Export Session (JIRA Markdown / Markdown / JSON)` | Pick format, redaction, and code-block options, then preview before copy or save             |
-| `Copilot: Import Session`                                   | Load a previously exported JSON session file into the index                                  |
-| `Copilot: Set Storage Path Override`                        | Interactively set (or clear) the storage path override                                       |
-| `Copilot: Diagnostics`                                      | Show storage discovery details including SQLite table names and per-file session counts      |
+Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and search for any of the following:
+
+| Command                                                                     | Description                                                             |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `Copilot Session Browser: Refresh Session Index`                            | Re-scan local storage and reload the session list                       |
+| `Copilot Session Browser: View Session`                                     | Open the selected session transcript in a tab                           |
+| `Copilot Session Browser: Summarize Session`                                | Generate an Atlassian Markdown summary panel                            |
+| `Copilot Session Browser: Export Session (JIRA Markdown / Markdown / JSON)` | Choose format and options, then preview before copy or save             |
+| `Copilot Session Browser: Import Session`                                   | Load a previously exported JSON session into the index                  |
+| `Copilot Session Browser: Set Storage Path Override`                        | Set or clear a custom path for session discovery                        |
+| `Copilot Session Browser: Diagnostics`                                      | View all discovered files, their types, table names, and session counts |
 
 ---
 
-## Running Tests
+## Extension Settings
 
-```bash
-npm test
-```
+Configure the extension in VS Code Settings (`Ctrl+,` / `Cmd+,`):
 
-Tests use **Mocha** with **ts-node** (no VS Code host required for unit tests).
-
-### Test coverage
-
-- `parser.test.ts` — Schema adapters V1/V2/V4, date parsing, code-block extraction, resilience to unknown schemas
-- `redactor.test.ts` — All redaction patterns; safe text untouched; file-path redaction
-- `exporter.test.ts` — JIRA/MD/JSON formatting; round-trip JSON; secret redaction; code-block toggle
+| Setting                                        | Default | Description                                                                         |
+| ---------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `copilotSessionBrowser.redactSecretsByDefault` | `true`  | Automatically redact secrets (tokens, API keys, passwords) in summaries and exports |
+| `copilotSessionBrowser.overrideStoragePath`    | `""`    | Custom path for session discovery. Clears to restore auto-detection.                |
+| `copilotSessionBrowser.additionalSearchPaths`  | `[]`    | Extra VS Code User directories to include alongside auto-detected paths             |
+| `copilotSessionBrowser.enableTelemetry`        | `false` | Opt-in anonymous usage telemetry                                                    |
 
 ---
 
-## How Sessions Are Discovered
+## Troubleshooting: Sessions Not Found
 
-The extension searches these locations in order (no hardcoded absolute paths):
+If the extension does not automatically discover your sessions, you can manually point it to the right location.
 
-```
-Windows:
-  %APPDATA%\Code\User\globalStorage\github.copilot-chat\*
-  %APPDATA%\Code\User\workspaceStorage\<hash>\github.copilot-chat\*
-
-macOS:
-  ~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/*
-  ~/Library/Application Support/Code/User/workspaceStorage/<hash>/github.copilot-chat/*
-
-Linux:
-  $XDG_CONFIG_HOME/Code/User/globalStorage/github.copilot-chat/*
-  $XDG_CONFIG_HOME/Code/User/workspaceStorage/<hash>/github.copilot-chat/*
-```
-
-Also searched: `Code - Insiders`, `Code - OSS`, `VSCodium` variants.
-Both `.json` and `.vscdb` / `.db` (SQLite) files are read automatically.
-
-### SQLite support
-
-GitHub Copilot Chat stores its session state in SQLite databases (`state.vscdb`, `workspace-chunks.db`, etc.).
-The extension reads these using **sql.js** (pure JS/WASM — no native binaries required).
-It tries four strategies in order:
-
-0. **`chat.ChatSessionStore.index`** — Modern Copilot Chat (≥ v1.200). Reads the V5 session index from the `ItemTable`. Full transcripts are loaded from per-session JSONL event-log files stored under `workspaceStorage/<hash>/GitHub.copilot-chat/chat-session-resources/<id>/`.
-1. **`ItemTable`** — VS Code's standard extension-state schema. Copilot Chat writes its `globalState` here as serialised JSON values, handled by schema adapters V1–V4.
-2. **Direct conversation tables** — scans for tables named `conversations`, `sessions`, `chatSessions`, `messages`, etc. and looks for JSON blob columns.
-3. **Row-as-message fallback** — wraps raw table rows as messages if no recognised schema is found.
-
-> **Note:** `workspace-chunks.db` is a _code-index_ file, not a chat history file. The extension will open it and list its tables but will report 0 sessions. This is expected. The chat history lives in `state.vscdb`.
-
-Run **Copilot: Diagnostics** to see every file found, its type, table names, and session count.
-
----
-
-## Overriding the Storage Path
-
-If sessions are not discovered automatically (e.g. because VS Code writes to an unexpected location), you can tell the extension exactly where to look.
-
-### Option 1 — Using the command (recommended)
+### Step 1 — Use the command (recommended)
 
 1. Open the Command Palette (`Ctrl+Shift+P`)
-2. Run **`Copilot: Set Storage Path Override`**
-3. Enter the path in the input box (see path options below)
+2. Run **`Copilot Session Browser: Set Storage Path Override`**
+3. Enter one of the paths below
 4. The extension refreshes automatically
 
-To **reset to auto-detection**, run the command again and clear the input box.
+To **restore automatic detection**, run the command again and leave the input blank.
 
-### Option 2 — Via Settings JSON
-
-Open VS Code Settings (`Ctrl+,`), search for `copilotSessionBrowser.overrideStoragePath`, and set it directly.
-
-### What path to enter
-
-The extension is smart about what you pass:
+### Step 2 — What path to enter
 
 | Path you provide                | What gets scanned                                      |
 | ------------------------------- | ------------------------------------------------------ |
 | `...\workspaceStorage`          | All `<hash>\github.copilot-chat\` sub-directories      |
 | `...\globalStorage`             | `globalStorage\github.copilot-chat\` directly          |
-| `...\Code\User` (any other dir) | Both `globalStorage` and `workspaceStorage` beneath it |
+| `...\Code\User` (or any parent) | Both `globalStorage` and `workspaceStorage` beneath it |
 
-**Common paths on Windows:**
+**Common paths by platform:**
+
+**Windows**
 
 ```
-# Scan only workspaceStorage (most common fix)
 C:\Users\<you>\AppData\Roaming\Code\User\workspaceStorage
-
-# Scan both globalStorage and workspaceStorage
 C:\Users\<you>\AppData\Roaming\Code\User
-
-# Scan only globalStorage
-C:\Users\<you>\AppData\Roaming\Code\User\globalStorage
 ```
 
----
+**macOS**
 
-## Supported Session Formats
+```
+~/Library/Application Support/Code/User/workspaceStorage
+~/Library/Application Support/Code/User
+```
 
-| Schema | Shape                                                        | Notes                                                                                                                    |
-| ------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| V1     | `{ sessions: [{ requests: [] }] }`                           | Older Copilot Chat                                                                                                       |
-| V2     | `{ conversations: [{ turns: [] }] }`                         | Newer Copilot Chat                                                                                                       |
-| V3     | `{ chatSessions: [{ entries: [] }] }`                        | Panel chat variant                                                                                                       |
-| V4     | `{ id, messages: [] }`                                       | Extension's own JSON export (round-trip re-import)                                                                       |
-| V5     | `{ version: 1, entries: { "<uuid>": { sessionId, … } } }`   | Modern Copilot Chat (≥ v1.200), SQLite-only. Title/timing from `chat.ChatSessionStore.index`; transcript from per-session JSONL files on disk. |
+**Linux**
 
----
+```
+~/.config/Code/User/workspaceStorage
+~/.config/Code/User
+```
 
-## Settings
+### Step 3 — Run Diagnostics
 
-| Setting                                        | Default | Description                                                                                                                                                            |
-| ---------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `copilotSessionBrowser.overrideStoragePath`    | `""`    | Path override for session discovery. Accepts a `workspaceStorage`, `globalStorage`, or User dir. When set, auto-detection is skipped. Clear to restore auto-detection. |
-| `copilotSessionBrowser.additionalSearchPaths`  | `[]`    | Extra VS Code User directories to search in addition to auto-detected paths.                                                                                           |
-| `copilotSessionBrowser.redactSecretsByDefault` | `true`  | Redact secrets in summaries and exports by default.                                                                                                                    |
-| `copilotSessionBrowser.enableTelemetry`        | `false` | Anonymous usage telemetry (opt-in).                                                                                                                                    |
+Run **`Copilot Session Browser: Diagnostics`** from the Command Palette to see every file the extension found, its format, database table names, and session count. This is the fastest way to identify why sessions may not be appearing.
 
 ---
 
-## Security
+## Security & Privacy
 
-- All webviews use a strict Content Security Policy (`default-src 'none'`).
-- Script nonces are generated per webview session.
-- Redacted patterns: PEM private keys, Bearer tokens, AWS keys, GitHub PATs, Azure account keys, database passwords, generic long tokens.
-- Exports always require explicit user action (Save dialog).
-- JIRA summary panel shows a preview with a warning when redaction is off.
+- **No network calls** — all processing is done locally on your machine.
+- **Strict Content Security Policy** — all extension webviews run with `default-src 'none'`.
+- **Script nonces** — unique per webview session, preventing code injection.
+- **Secret redaction** — the following are removed before any export or summary (enabled by default):
+  - PEM private keys
+  - Bearer tokens
+  - AWS access keys
+  - GitHub Personal Access Tokens (PATs)
+  - Azure storage account keys
+  - Database connection string passwords
+  - Generic long-form tokens
+- **Explicit save actions** — exports are never written to disk without a user-initiated Save dialog.
+- **Redaction warning** — the JIRA summary panel displays a visible warning when redaction is disabled.
 
 ---
 
-## Project Structure
+## For Contributors & Developers
 
-See [DESIGN.md](./DESIGN.md) for the full technical design, data model, and architecture diagram.
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for setup instructions, build steps, test details, and the internal architecture.

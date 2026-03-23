@@ -2,8 +2,9 @@
   "name": "copilot-session-browser",
   "displayName": "Copilot Session Browser",
   "description": "Browse, search, summarize, and export GitHub Copilot Chat sessions locally",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "kranthikumarkvs",
+  "icon": "media/sessionbrowser.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/kvskranthikumar/copilot-session-browser.git"
@@ -45,36 +46,36 @@
     "commands": [
       {
         "command": "copilotSessionBrowser.refresh",
-        "title": "Copilot: Refresh Session Index",
+        "title": "Copilot Session Browser: Refresh Session Index",
         "icon": "$(refresh)"
       },
       {
         "command": "copilotSessionBrowser.viewSession",
-        "title": "Copilot: View Session",
+        "title": "Copilot Session Browser: View Session",
         "icon": "$(eye)"
       },
       {
         "command": "copilotSessionBrowser.summarize",
-        "title": "Copilot: Summarize Session"
+        "title": "Copilot Session Browser: Summarize Session"
       },
       {
         "command": "copilotSessionBrowser.exportSession",
-        "title": "Copilot: Export Session (JIRA Markdown / Markdown / JSON)",
+        "title": "Copilot Session Browser: Export Session (JIRA Markdown / Markdown / JSON)",
         "icon": "$(export)"
       },
       {
         "command": "copilotSessionBrowser.importSession",
-        "title": "Copilot: Import Session",
+        "title": "Copilot Session Browser: Import Session",
         "icon": "$(file-add)"
       },
       {
         "command": "copilotSessionBrowser.diagnostics",
-        "title": "Copilot: Diagnostics",
+        "title": "Copilot Session Browser: Diagnostics",
         "icon": "$(info)"
       },
       {
         "command": "copilotSessionBrowser.setStoragePath",
-        "title": "Copilot: Set Storage Path Override",
+        "title": "Copilot Session Browser: Set Storage Path Override",
         "icon": "$(folder-opened)"
       }
     ],
@@ -108,7 +109,7 @@
         "copilotSessionBrowser.overrideStoragePath": {
           "type": "string",
           "default": "",
-          "description": "Override the storage path used to discover Copilot Chat sessions. Accepts: a VS Code User directory (parent of globalStorage/workspaceStorage), a direct workspaceStorage folder, or a direct globalStorage folder. When set, auto-detection is skipped. Use the 'Copilot: Set Storage Path Override' command to set this interactively."
+          "description": "Override the storage path used to discover Copilot Chat sessions. Accepts: a VS Code User directory (parent of globalStorage/workspaceStorage), a direct workspaceStorage folder, or a direct globalStorage folder. When set, auto-detection is skipped. Use the 'Copilot Session Browser: Set Storage Path Override' command to set this interactively."
         },
         "copilotSessionBrowser.additionalSearchPaths": {
           "type": "array",
