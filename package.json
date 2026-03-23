@@ -4,6 +4,10 @@
   "description": "Browse, search, summarize, and export GitHub Copilot Chat sessions locally",
   "version": "1.0.0",
   "publisher": "kranthikumarkvs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kvskranthikumar/copilot-session-browser.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
