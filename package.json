@@ -2,7 +2,7 @@
   "name": "copilot-session-browser",
   "displayName": "Copilot Session Browser",
   "description": "Browse, search, summarize, and export GitHub Copilot Chat sessions locally",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "kranthikumarkvs",
   "icon": "media/sessionbrowser.png",
   "repository": {
@@ -128,7 +128,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run bundle && node scripts/copy-wasm.js",
+    "bundle": "node esbuild.js",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
@@ -143,6 +144,7 @@
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
+    "esbuild": "^0.27.4",
     "eslint": "^8.56.0",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.2",

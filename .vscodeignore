@@ -8,3 +8,5 @@ tsconfig.json
 tsconfig.test.json
 .eslintrc*
 *.map
+esbuild.js
+scripts/

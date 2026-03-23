@@ -31,11 +31,14 @@ Press **F5** to launch the Extension Development Host. The **Copilot Session Bro
 
 | Script | Command | Description |
 | --- | --- | --- |
-| Compile | `npm run compile` | Compile TypeScript once |
+| Compile | `npm run compile` | Compile TypeScript once (dev only) |
+| Bundle | `npm run bundle` | esbuild bundle for production (`out/extension.js`) |
 | Watch | `npm run watch` | Compile in watch mode |
 | Test | `npm test` | Run all unit tests |
 | Lint | `npm run lint` | Run ESLint on `src/` |
-| Package | `vsce package` | Build a `.vsix` for local install |
+| Package | `vsce package` | Build a `.vsix` for local install (runs `bundle` + copies WASM automatically) |
+
+> **Note:** `vsce package` triggers `vscode:prepublish` which runs esbuild to bundle all dependencies (including `sql.js`) into `out/extension.js` and copies `sql-wasm.wasm` to `media/`. Do **not** use `npm run compile` alone for packaging — it produces unbundled output that cannot find `sql.js` at runtime.
 
 ---
 
