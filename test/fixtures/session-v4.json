@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "4",
+  "exportedAt": "2024-01-20T12:00:00.000Z",
+  "id": "v4-single-session-001",
+  "title": "Database Query Optimisation",
+  "createdAt": "2024-01-20T08:00:00.000Z",
+  "updatedAt": "2024-01-20T09:00:00.000Z",
+  "workspaceContext": "/projects/api-service",
+  "tags": ["database", "performance", "sql"],
+  "messageCount": 3,
+  "messages": [
+    {
+      "id": "msg-001",
+      "role": "user",
+      "timestamp": "2024-01-20T08:00:00.000Z",
+      "markdownContent": "My SQL query is taking 30 seconds to run on a table with 5 million rows. Can you help optimise it?\n\n```sql\nSELECT u.name, COUNT(o.id) as order_count\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nWHERE o.created_at > '2024-01-01'\nGROUP BY u.id, u.name\nHAVING COUNT(o.id) > 10\nORDER BY order_count DESC;\n```",
+      "codeBlocks": [
+        { "language": "sql", "content": "SELECT u.name, COUNT(o.id) as order_count\nFROM users u\nLEFT JOIN orders o ON u.id = o.user_id\nWHERE o.created_at > '2024-01-01'\nGROUP BY u.id, u.name\nHAVING COUNT(o.id) > 10\nORDER BY order_count DESC;" }
+      ]
+    },
+    {
+      "id": "msg-002",
+      "role": "assistant",
+      "timestamp": "2024-01-20T08:01:00.000Z",
+      "markdownContent": "I recommend several optimisations:\n\n1. **Add a composite index** on `orders(user_id, created_at)`\n2. **Switch LEFT JOIN to INNER JOIN** since the WHERE clause on `o.created_at` already filters out NULLs\n3. **Use a CTE** for clarity and potential optimiser hints\n\n```sql\n-- Step 1: Add index\nCREATE INDEX idx_orders_user_date ON orders(user_id, created_at);\n\n-- Step 2: Optimised query\nWITH active_orders AS (\n  SELECT user_id, COUNT(*) AS cnt\n  FROM orders\n  WHERE created_at > '2024-01-01'\n  GROUP BY user_id\n  HAVING COUNT(*) > 10\n)\nSELECT u.name, ao.cnt AS order_count\nFROM active_orders ao\nINNER JOIN users u ON u.id = ao.user_id\nORDER BY ao.cnt DESC;\n```\n\n**Expected improvement:** The index should reduce scan time from O(N) to O(log N) + filtered rows.\n\n**Caveat:** Test with EXPLAIN ANALYZE before deploying to production.",
+      "codeBlocks": [
+        { "language": "sql", "content": "CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);\n\nWITH active_orders AS (\n  SELECT user_id, COUNT(*) AS cnt\n  FROM orders\n  WHERE created_at > '2024-01-01'\n  GROUP BY user_id\n  HAVING COUNT(*) > 10\n)\nSELECT u.name, ao.cnt AS order_count\nFROM active_orders ao\nINNER JOIN users u ON u.id = ao.user_id\nORDER BY ao.cnt DESC;" }
+      ]
+    },
+    {
+      "id": "msg-003",
+      "role": "user",
+      "timestamp": "2024-01-20T08:05:00.000Z",
+      "markdownContent": "Excellent! The query now runs in 0.4 seconds. Should I also add an index on orders.created_at?",
+      "codeBlocks": []
+    }
+  ]
+}

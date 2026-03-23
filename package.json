@@ -1,0 +1,149 @@
+{
+  "name": "copilot-session-browser",
+  "displayName": "Copilot Session Browser",
+  "description": "Browse, search, summarize, and export GitHub Copilot Chat sessions locally",
+  "version": "1.0.0",
+  "publisher": "kranthikumarkvs",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "copilot",
+    "chat",
+    "sessions",
+    "productivity",
+    "JIRA"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "copilot-session-browser",
+          "title": "Copilot Session Browser",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "copilot-session-browser": [
+        {
+          "type": "webview",
+          "id": "copilotSessionBrowser.sessionList",
+          "name": "Copilot Session Browser"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "copilotSessionBrowser.refresh",
+        "title": "Copilot: Refresh Session Index",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "copilotSessionBrowser.viewSession",
+        "title": "Copilot: View Session",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "copilotSessionBrowser.summarize",
+        "title": "Copilot: Summarize Session"
+      },
+      {
+        "command": "copilotSessionBrowser.exportSession",
+        "title": "Copilot: Export Session (JIRA Markdown / Markdown / JSON)",
+        "icon": "$(export)"
+      },
+      {
+        "command": "copilotSessionBrowser.importSession",
+        "title": "Copilot: Import Session",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "copilotSessionBrowser.diagnostics",
+        "title": "Copilot: Diagnostics",
+        "icon": "$(info)"
+      },
+      {
+        "command": "copilotSessionBrowser.setStoragePath",
+        "title": "Copilot: Set Storage Path Override",
+        "icon": "$(folder-opened)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "copilotSessionBrowser.refresh",
+          "when": "view == copilotSessionBrowser.sessionList",
+          "group": "navigation@1"
+        },
+        {
+          "command": "copilotSessionBrowser.importSession",
+          "when": "view == copilotSessionBrowser.sessionList",
+          "group": "navigation@2"
+        },
+        {
+          "command": "copilotSessionBrowser.diagnostics",
+          "when": "view == copilotSessionBrowser.sessionList",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Copilot Session Browser",
+      "properties": {
+        "copilotSessionBrowser.redactSecretsByDefault": {
+          "type": "boolean",
+          "default": true,
+          "description": "Redact secrets (API keys, tokens, passwords) in summaries and exports by default."
+        },
+        "copilotSessionBrowser.overrideStoragePath": {
+          "type": "string",
+          "default": "",
+          "description": "Override the storage path used to discover Copilot Chat sessions. Accepts: a VS Code User directory (parent of globalStorage/workspaceStorage), a direct workspaceStorage folder, or a direct globalStorage folder. When set, auto-detection is skipped. Use the 'Copilot: Set Storage Path Override' command to set this interactively."
+        },
+        "copilotSessionBrowser.additionalSearchPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional directories to search for Copilot Chat session files (appended to auto-detected paths). Each entry should be a VS Code User directory (parent of globalStorage/workspaceStorage)."
+        },
+        "copilotSessionBrowser.enableTelemetry": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable anonymous usage telemetry (disabled by default)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "mocha --require ts-node/register \"test/suite/**/*.test.ts\" --timeout 10000",
+    "test:compile": "tsc -p tsconfig.test.json",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^18.0.0",
+    "@types/sql.js": "^1.4.10",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.1"
+  }
+}

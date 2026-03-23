@@ -1,0 +1,43 @@
+{
+  "version": "1",
+  "sessions": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "title": "TypeScript Error Fix",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T11:45:00.000Z",
+      "workspacePath": "/projects/myapp",
+      "tags": ["typescript", "debugging"],
+      "requests": [
+        {
+          "id": "req-001",
+          "message": "I'm getting a TypeScript error: Type 'string' is not assignable to type 'number'. How do I fix this?",
+          "response": "This error occurs when you're trying to assign a `string` value to a variable typed as `number`.\n\nHere's how to fix it:\n\n```typescript\n// Wrong:\nconst value: number = '42';\n\n// Correct – parse it:\nconst value: number = parseInt('42', 10);\n// or with Number():\nconst value2: number = Number('42');\n```\n\nI'll use `parseInt` with a radix of 10 to avoid unexpected behaviour with hex strings.",
+          "timestamp": "2024-01-15T10:30:00.000Z"
+        },
+        {
+          "id": "req-002",
+          "message": "What if the string might not be a valid number? How do I handle that safely?",
+          "response": "Good question! You should validate before converting:\n\n```typescript\nfunction toNumber(input: string): number | null {\n  const parsed = Number(input);\n  return isNaN(parsed) ? null : parsed;\n}\n\n// Usage:\nconst result = toNumber(userInput);\nif (result === null) {\n  console.error('Invalid number');\n} else {\n  console.log('Parsed:', result);\n}\n```\n\n**Risks / Gotchas:**\n- `Number('')` returns `0`, which may be unexpected\n- `parseInt('42px')` returns `42` – use `Number()` for strict parsing\n- TODO: add unit tests for edge cases like empty string and `Infinity`",
+          "responseId": "res-002",
+          "timestamp": "2024-01-15T10:35:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "title": "React Performance Optimization",
+      "createdAt": "2024-01-14T09:00:00.000Z",
+      "updatedAt": "2024-01-14T10:30:00.000Z",
+      "tags": ["react", "performance"],
+      "requests": [
+        {
+          "id": "req-003",
+          "message": "My React component re-renders too often. Every time the parent renders, the child also re-renders even though its props haven't changed.",
+          "response": "I recommend using `React.memo` to prevent unnecessary re-renders:\n\n```jsx\nimport React, { memo, useCallback } from 'react';\n\nconst ExpensiveChild = memo(({ value, onUpdate }) => {\n  return <div onClick={() => onUpdate(value)}>{value}</div>;\n});\n\n// In parent:\nconst Parent = () => {\n  const [count, setCount] = React.useState(0);\n  \n  // Use useCallback to stabilize the function reference:\n  const handleUpdate = useCallback((val) => {\n    console.log('Updated:', val);\n  }, []); // empty deps = never changes\n\n  return <ExpensiveChild value=\"hello\" onUpdate={handleUpdate} />;\n};\n```\n\n**Best approach:** Combine `React.memo` with `useCallback` for props that are functions.",
+          "timestamp": "2024-01-14T09:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

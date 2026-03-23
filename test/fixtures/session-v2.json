@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "2",
+  "conversations": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "name": "Azure Function Migration from AWS Lambda",
+      "createdAt": 1705312200000,
+      "lastUpdatedAt": 1705319400000,
+      "workspacePath": "C:\\Users\\dev\\projects\\cloud-migration",
+      "tags": ["azure", "aws", "migration"],
+      "turns": [
+        {
+          "id": "turn-001",
+          "userMessage": {
+            "content": "I need to migrate an AWS Lambda function to Azure Functions. The Lambda uses the Node.js runtime and reads from an S3 bucket. What's the equivalent setup in Azure?",
+            "timestamp": 1705312200000
+          },
+          "assistantMessage": {
+            "content": "Great! I'll use Azure Functions v4 with the Node.js runtime. The S3 equivalent in Azure is **Azure Blob Storage**.\n\nHere's the migration plan:\n\n1. Create an Azure Function App\n2. Replace the S3 SDK with `@azure/storage-blob`\n3. Update the trigger signature\n\n```typescript\nimport { app } from '@azure/functions';\nimport { BlobServiceClient } from '@azure/storage-blob';\n\napp.timer('myTimer', {\n  schedule: '0 */5 * * * *',\n  handler: async (myTimer, context) => {\n    const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;\n    const client = BlobServiceClient.fromConnectionString(connectionString);\n    const containerClient = client.getContainerClient('my-container');\n    \n    // Read blob (equivalent to S3.getObject)\n    const blobClient = containerClient.getBlobClient('my-file.json');\n    const download = await blobClient.download();\n    const content = await streamToString(download.readableStreamBody!);\n    \n    context.log('Processing:', content.length, 'bytes');\n  }\n});\n```\n\nAdd to `local.settings.json`:\n```json\n{\n  \"IsEncrypted\": false,\n  \"Values\": {\n    \"FUNCTIONS_WORKER_RUNTIME\": \"node\",\n    \"AZURE_STORAGE_CONNECTION_STRING\": \"<your-connection-string>\"\n  }\n}\n```\n\n**Key differences:**\n- Lambda `event` object → Azure `context` object\n- S3 SDK → `@azure/storage-blob`\n- IAM roles → Azure Managed Identity (recommended over connection strings)\n\n**Warning:** Don't hardcode connection strings; use environment variables or Managed Identity.",
+            "timestamp": 1705312260000,
+            "parts": [
+              {
+                "kind": "markdownContent",
+                "value": "Great! I'll use Azure Functions v4 with the Node.js runtime."
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-002",
+          "userMessage": {
+            "content": "How do I use Managed Identity instead of a connection string? My current code uses AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE and AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+            "timestamp": 1705313000000
+          },
+          "assistantMessage": {
+            "content": "I recommend switching to Managed Identity – it's more secure and avoids storing credentials.\n\n**Note:** You've included AWS credentials above – those should be rotated immediately if they are real keys.\n\n```typescript\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { BlobServiceClient } from '@azure/storage-blob';\n\n// Use Managed Identity (no secrets in code!):\nconst credential = new DefaultAzureCredential();\nconst client = new BlobServiceClient(\n  `https://${storageAccountName}.blob.core.windows.net`,\n  credential\n);\n```\n\n**Setup steps:**\n1. Enable system-assigned Managed Identity on your Function App\n2. Assign **Storage Blob Data Reader** RBAC role to the identity\n3. Remove `AZURE_STORAGE_CONNECTION_STRING` from settings\n\nTODO: Add retry logic for transient storage failures.",
+            "timestamp": 1705313060000
+          }
+        }
+      ]
+    }
+  ]
+}
