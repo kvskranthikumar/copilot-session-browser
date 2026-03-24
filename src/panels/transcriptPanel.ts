@@ -94,6 +94,7 @@ export class TranscriptPanel {
             void vscode.commands.executeCommand(
               'copilotSessionBrowser.exportSession',
               session.id,
+              (msg.roleFilter as string | undefined) ?? 'all',
             );
             break;
         }
@@ -194,21 +195,29 @@ export class TranscriptPanel {
       gap: 8px;
       flex-wrap: wrap;
     }
-    .btn {
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      border: none;
-      border-radius: 2px;
-      padding: 4px 10px;
-      cursor: pointer;
-      font-size: 12px;
-    }
+    .btn { background: var(--btn-bg); color: var(--btn-fg); border: none;
+      border-radius: 2px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
     .btn:hover { opacity: 0.85; }
     .btn-secondary {
       background: var(--vscode-button-secondaryBackground, transparent);
       color: var(--vscode-button-secondaryForeground, var(--fg));
       border: 1px solid var(--border);
     }
+    .role-filter-btn {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .role-filter-btn.active {
+      background: var(--vscode-badge-background, var(--btn-bg));
+      color: var(--vscode-badge-foreground, var(--btn-fg));
+      border-color: transparent;
+    }
+    .role-filter-btn:hover:not(.active) { opacity: 0.8; }
 
     /* Messages */
     .message {
@@ -337,6 +346,10 @@ export class TranscriptPanel {
     <button class="btn" id="btn-sum">📋 Summarize</button>
     <button class="btn btn-secondary" id="btn-export">💾 Export…</button>
     <button class="btn btn-secondary" id="btn-toggle-all" data-collapsed="false">Collapse all</button>
+    <span style="margin-left:8px;font-size:11px;opacity:0.7;align-self:center">Show:</span>
+    <button class="role-filter-btn active" data-role="all">All</button>
+    <button class="role-filter-btn" data-role="user">User</button>
+    <button class="role-filter-btn" data-role="assistant">Copilot</button>
   </div>
 </div>
 
@@ -355,9 +368,29 @@ ${messagesHtml}
 <script nonce="${nonce}">
 const vscode = acquireVsCodeApi();
 const CODES = ${codeBlocksJson};
+let activeRoleFilter = 'all';
+
+function applyRoleFilter() {
+  document.querySelectorAll('.message').forEach(function(msg) {
+    if (activeRoleFilter === 'all') {
+      msg.style.display = '';
+    } else {
+      msg.style.display = msg.classList.contains(activeRoleFilter) ? '' : 'none';
+    }
+  });
+}
+
+document.querySelectorAll('.role-filter-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.role-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    activeRoleFilter = btn.dataset.role;
+    applyRoleFilter();
+  });
+});
 
 document.getElementById('btn-sum').addEventListener('click', () => vscode.postMessage({ type: 'summarize' }));
-document.getElementById('btn-export').addEventListener('click', () => vscode.postMessage({ type: 'exportSession' }));
+document.getElementById('btn-export').addEventListener('click', () => vscode.postMessage({ type: 'exportSession', roleFilter: activeRoleFilter }));
 document.getElementById('btn-toggle-all').addEventListener('click', function() {
   const collapsed = this.dataset.collapsed === 'true';
   document.querySelectorAll('.message').forEach(m =>

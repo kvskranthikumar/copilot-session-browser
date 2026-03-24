@@ -82,6 +82,7 @@ export interface ExportOptions {
   includeCodeBlocks: boolean;
   includeFilePaths: boolean;
   redactSecrets: boolean;
+  roleFilter?: 'all' | 'user' | 'assistant';
 }
 
 export interface SummaryOptions {

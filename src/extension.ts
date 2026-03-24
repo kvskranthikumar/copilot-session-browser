@@ -61,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     vscode.commands.registerCommand(
       'copilotSessionBrowser.exportSession',
-      (sessionId?: string) => cmdExport(sessionId, context),
+      (sessionId?: string, roleFilter?: string) => cmdExport(sessionId, context, roleFilter),
     ),
 
     vscode.commands.registerCommand('copilotSessionBrowser.importSession', () =>
@@ -255,7 +255,7 @@ async function cmdSummarize(
   );
 }
 
-async function cmdExport(sessionId: string | undefined, context: vscode.ExtensionContext): Promise<void> {
+async function cmdExport(sessionId: string | undefined, context: vscode.ExtensionContext, roleFilter?: string): Promise<void> {
   const id = sessionId ?? await promptSelectSession();
   if (!id) {
     return;
@@ -307,9 +307,10 @@ async function cmdExport(sessionId: string | undefined, context: vscode.Extensio
   }
 
   // Open preview panel — user can copy or save from there
+  const resolvedRoleFilter = (roleFilter === 'user' || roleFilter === 'assistant') ? roleFilter : 'all';
   PreviewPanel.openOrReveal(
     session,
-    { format: formatPick.value, includeCodeBlocks, includeFilePaths: false, redactSecrets },
+    { format: formatPick.value, includeCodeBlocks, includeFilePaths: false, redactSecrets, roleFilter: resolvedRoleFilter },
     context.extensionUri,
     vscode.ViewColumn.Two,
   );

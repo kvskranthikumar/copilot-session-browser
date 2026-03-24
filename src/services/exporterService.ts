@@ -20,16 +20,23 @@ function formatTimestamp(d: Date | undefined): string {
   return d.toLocaleString();
 }
 
-/** Apply redaction if requested, respecting code-blocks toggle */
+/** Apply role filter and redaction, respecting code-blocks toggle */
 function prepareSession(
   session: SessionWithMessages,
   options: ExportOptions,
 ): SessionWithMessages {
-  if (!options.redactSecrets) {
-    return session;
+  // Apply role filter first
+  let messages = session.messages;
+  if (options.roleFilter && options.roleFilter !== 'all') {
+    const targetRole = options.roleFilter === 'user' ? 'user' : 'assistant';
+    messages = messages.filter(m => m.role === targetRole);
   }
 
-  const messages = session.messages.map(m => {
+  if (!options.redactSecrets) {
+    return { ...session, messages };
+  }
+
+  const redactedMessages = messages.map(m => {
     let content = redactor.redact(m.markdownContent).text;
     if (!options.includeFilePaths) {
       content = redactor.redactFilePaths(content);
@@ -45,7 +52,7 @@ function prepareSession(
     return { ...m, markdownContent: content, codeBlocks };
   });
 
-  return { ...session, messages };
+  return { ...session, messages: redactedMessages };
 }
 
 // ── Standard Markdown export ──────────────────────────────────────────────────
