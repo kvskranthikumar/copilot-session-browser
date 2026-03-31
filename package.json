@@ -2,7 +2,7 @@
   "name": "copilot-session-browser",
   "displayName": "Copilot Session Browser",
   "description": "Browse, search, summarize, and export GitHub Copilot Chat sessions locally",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "kranthikumarkvs",
   "icon": "media/sessionbrowser.png",
   "repository": {
