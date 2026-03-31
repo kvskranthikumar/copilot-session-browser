@@ -37,6 +37,10 @@ function getVSCodeUserDataPaths(): string[] {
       path.join(configBase, 'Code', 'User'),
       path.join(configBase, 'Code - Insiders', 'User'),
       path.join(configBase, 'VSCodium', 'User'),
+      // VS Code Server (Remote - SSH / vscode-server) stores data here, not in
+      // the XDG config directory used by the desktop application.
+      path.join(home, '.vscode-server', 'data', 'User'),
+      path.join(home, '.vscode-server-insiders', 'data', 'User'),
     );
   }
 
@@ -275,14 +279,36 @@ export class DiscoveryService {
       if (copilotDirLower) {
         // Scan state.vscdb at workspace level — this is where sessions live
         const statDb = path.join(wsDir, 'state.vscdb');
+        let statDbSessionCount = 0;
         if (safeExists(statDb)) {
-          const result = await this.inspectSqliteFile(statDb);
-          result.workspaceHash = entry;
-          results.push(result);
+          const statDbResult = await this.inspectSqliteFile(statDb);
+          statDbResult.workspaceHash = entry;
+          results.push(statDbResult);
+          statDbSessionCount = statDbResult.sessionCount;
         }
         // Also scan inside github.copilot-chat/ for any legacy JSON files
         const copilotDir = path.join(wsDir, copilotDirLower);
         await this.scanDirectory(copilotDir, results, entry);
+
+        // ── VS Code Server fallback: no state.vscdb, sessions in chatSessions/ ──
+        // On vscode-server the workspace-level state.vscdb may not exist; sessions
+        // are stored as JSONL files in GitHub.copilot-chat/chatSessions/.
+        // Also check the hash-level chatSessions/ used by built-in Copilot in newer VS Code.
+        if (statDbSessionCount === 0) {
+          for (const chatDir of [
+            path.join(copilotDir, 'chatSessions'),     // GitHub.copilot-chat/chatSessions/
+            path.join(wsDir, 'chatSessions'),           // <hash>/chatSessions/ (built-in)
+          ]) {
+            if (safeExists(chatDir)) {
+              const jsonlResult = await this.inspectJsonlDir(chatDir);
+              if (jsonlResult.sessionCount > 0) {
+                jsonlResult.workspaceHash = entry;
+                results.push(jsonlResult);
+                break;
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -383,6 +409,26 @@ export class DiscoveryService {
       sessionCount: res.sessions.length,
       errors,
       tableNames: res.tableNames,
+    };
+  }
+
+  private async inspectJsonlDir(dirPath: string): Promise<DiscoveryResult> {
+    if (!this.sqliteReader) {
+      return {
+        path: dirPath,
+        type: 'jsonl',
+        schemaVersion: 'jsonl-unavailable',
+        sessionCount: 0,
+        errors: ['SQLite/JSONL reading is not available. Reload the extension (F5) to enable it.'],
+      };
+    }
+    const res = await this.sqliteReader.readJsonlDir(dirPath);
+    return {
+      path: dirPath,
+      type: 'jsonl',
+      schemaVersion: res.isConversationData ? `jsonl:${res.schemaUsed}` : 'jsonl',
+      sessionCount: res.sessions.length,
+      errors: res.errors,
     };
   }
 

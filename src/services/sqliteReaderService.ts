@@ -279,8 +279,10 @@ export class SqliteReaderService {
 
             const sessionMessages: Record<string, Message[]> = {};
             if (wsHash) {
+              // chat-session-resources lives inside the workspace hash directory,
+              // not one level above it.
               const chatResDir = path.join(
-                path.dirname(path.dirname(filePath)),
+                path.dirname(filePath),
                 'GitHub.copilot-chat',
                 'chat-session-resources',
               );
@@ -320,7 +322,13 @@ export class SqliteReaderService {
             // These files hold the complete conversation event-log and are the
             // authoritative source of chat content for V5 sessions.  Messages
             // found here OVERRIDE any tool-artifact messages collected above.
-            const chatSessionsDir = path.join(path.dirname(filePath), 'chatSessions');
+            // Check both the workspace-hash level (built-in VS Code Copilot Chat)
+            // and inside GitHub.copilot-chat/ (extension-based / vscode-server).
+            const chatSessionsAtHash = path.join(path.dirname(filePath), 'chatSessions');
+            const chatSessionsInExt  = path.join(path.dirname(filePath), 'GitHub.copilot-chat', 'chatSessions');
+            const chatSessionsDir = fs.existsSync(chatSessionsAtHash)
+              ? chatSessionsAtHash
+              : chatSessionsInExt;
             if (fs.existsSync(chatSessionsDir)) {
               let jsonlFiles: string[];
               try {
@@ -479,6 +487,72 @@ export class SqliteReaderService {
       }
     } finally {
       db.close();
+    }
+
+    return result;
+  }
+
+  /**
+   * Read all `<sessionId>.jsonl` files in a chatSessions directory and return
+   * them as a SqliteReadResult.  Used when `state.vscdb` is absent (e.g. on
+   * VS Code Server) but JSONL transcripts are present.
+   */
+  async readJsonlDir(chatSessionsDirPath: string): Promise<SqliteReadResult> {
+    const result: SqliteReadResult = {
+      sessions: [],
+      tableNames: [],
+      errors: [],
+      isConversationData: false,
+      schemaUsed: 'none',
+    };
+
+    let jsonlFiles: string[];
+    try {
+      jsonlFiles = fs.readdirSync(chatSessionsDirPath).filter(f => f.endsWith('.jsonl'));
+    } catch (err) {
+      result.errors.push(
+        `Cannot read chatSessions directory: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return result;
+    }
+
+    for (const jsonlFile of jsonlFiles) {
+      const sid = path.basename(jsonlFile, '.jsonl');
+      const jsonlPath = path.join(chatSessionsDirPath, jsonlFile);
+      try {
+        const messages = readJsonlSession(jsonlPath, sid);
+        if (messages.length === 0) { continue; }
+
+        const firstUser = messages.find(m => m.role === 'user');
+        const title = firstUser
+          ? (firstUser.markdownContent.replace(/```[\s\S]*?```/g, '').trim().slice(0, 80) || sid)
+          : sid;
+
+        const timestamps = messages.map(m => m.timestamp).filter((t): t is Date => t instanceof Date);
+        const createdAt  = timestamps.length > 0 ? timestamps[0]  : new Date();
+        const updatedAt  = timestamps.length > 0 ? timestamps[timestamps.length - 1] : createdAt;
+
+        result.sessions.push({
+          id: sid,
+          title,
+          createdAt,
+          updatedAt,
+          tags: [],
+          messageCount: messages.length,
+          filePath: jsonlPath,
+          schemaVersion: 'v5',
+          messages,
+        });
+      } catch (e) {
+        result.errors.push(
+          `JSONL read error for ${sid.substring(0, 8)}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
+    if (result.sessions.length > 0) {
+      result.isConversationData = true;
+      result.schemaUsed = 'jsonl:chatSessions';
     }
 
     return result;

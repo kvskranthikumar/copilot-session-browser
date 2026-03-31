@@ -38,7 +38,7 @@ export interface SessionWithMessages extends Session {
 
 export interface DiscoveryResult {
   path: string;
-  type: 'json' | 'sqlite' | 'unknown';
+  type: 'json' | 'sqlite' | 'jsonl' | 'unknown';
   schemaVersion: string;
   sessionCount: number;
   errors: string[];

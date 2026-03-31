@@ -142,6 +142,27 @@ async function cmdRefresh(context: vscode.ExtensionContext): Promise<void> {
         } else {
           SessionListProvider.log(`  SKIP SQLITE: sessionCount=0 for ${result.path}`);
         }
+      } else if (result.type === 'jsonl') {
+        if (result.sessionCount > 0) {
+          const sqliteReader = discovery.getSqliteReader();
+          if (sqliteReader) {
+            try {
+              const res = await sqliteReader.readJsonlDir(result.path);
+              sessions = res.sessions;
+              SessionListProvider.log(
+                `  PARSE JSONL: ${result.path} → ${sessions.length} sessions` +
+                (res.errors.length > 0 ? ` ERRORS=[${res.errors.join('; ')}]` : ''),
+              );
+            } catch (err) {
+              SessionListProvider.log(`  PARSE JSONL ERROR: ${result.path} → ${err instanceof Error ? err.message : String(err)}`);
+              console.warn(`[CopilotSessionBrowser] JSONL read error in ${result.path}:`, err);
+            }
+          } else {
+            SessionListProvider.log(`  PARSE JSONL SKIP: no sqliteReader available for ${result.path}`);
+          }
+        } else {
+          SessionListProvider.log(`  SKIP JSONL: sessionCount=0 for ${result.path}`);
+        }
       }
 
       // Apply workspaceHash as a fallback label for sessions without a context
